@@ -3,6 +3,8 @@ import sys, pygame, math, json, os, threading, time
 pygame.init()
 screen = pygame.display.set_mode([800, 500])
 pygame.display.set_caption('Clicky')
+icon = pygame.image.load(os.path.join(sys.path[0], "images/icon.png"))
+pygame.display.set_icon(icon)
 
 # Initialize variables and load files #
 font = pygame.font.Font(None, 25)
@@ -12,17 +14,20 @@ logo = pygame.image.load(os.path.join(sys.path[0], "images/logo.png"))
 white = [255, 255, 255]
 black = [0, 0, 0]
 
-counter = 88888
+counter = 0
 mult = 1
 multCost = 100
 perSecond = 0
 perSecondCost = 1000
 saves = {}
 gameRunning = True
+errorLoading = False
 
 # Menu variables #
 firstTimeOpening = True
 inAboutScreen = False
+isInErrorScreen = False
+splashScreen = True
 
 scoreBox = (325, 75, 300, 100)
 getMultBox = (325, 200, 300, 100)
@@ -49,14 +54,20 @@ def load():
         global perSecondCost
         saves = json.load(file)
         counter = int(saves["score"])
-        mult = int(saves["mult"])
+        mult = int(saves["multi"])
         multCost = int(saves["multCost"])
         perSecond = int(saves["perSecond"])
         firstTimeOpening = saves["firstTimeOpening"]
         perSecondCost = int(saves["perSecondCost"])
 
 # Load scores #
-load()
+try:
+    load()
+except Exception as e:
+    errorLoading = True
+    isInErrorScreen = True
+    print("Can't load scores. Is the file corrupted or has it been moved? Error screen opened in application.")
+    print("Error: {}".format(str(e)))
 
 def save():
     saves["score"] = counter
@@ -98,6 +109,8 @@ while True:
             if check_click(event.pos, okBox):
                 if firstTimeOpening:
                     firstTimeOpening = False
+                elif isInErrorScreen:
+                    isInErrorScreen = False
                 elif inAboutScreen:
                     inAboutScreen = False
             
@@ -106,21 +119,35 @@ while True:
                     inAboutScreen = True
 
             elif check_click(event.pos, scoreBox):
-                print(counter)
-                counter += 1 * mult
-                print(counter)
+                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen:
+                    print(counter)
+                    counter += 1 * mult
+                    print(counter)
 
             elif check_click(event.pos, getMultBox):
-                if counter >= multCost:
-                    counter -= multCost
-                    mult += 1
-                    multCost += 100
+                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen:
+                    if counter >= multCost:
+                        counter -= multCost
+                        mult += 1
+                        multCost += 100
 
             elif check_click(event.pos, getPerSecondBox):
-                if counter >= perSecondCost:
-                    counter -= perSecondCost
-                    perSecond += 1
-                    perSecondCost+= 500
+                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen:
+                    if counter >= perSecondCost:
+                        counter -= perSecondCost
+                        perSecond += 1
+                        perSecondCost+= 500
+
+    # If it is the first time the user has opened the game or the database has been reset, show information #
+    if splashScreen:
+        screen.fill(white)
+        logoScaled = pygame.transform.scale(logo, (300, 300))
+        screen.blit(logoScaled, (250, 100))
+        screen.blit(font.render("Clicky © 2019 Cockatoo Development Studios. See our website at https://cockatoo.dev!", True, black), (40, 400))
+        pygame.display.flip()
+        time.sleep(5)
+        splashScreen = False
+
 
     # If it is the first time the user has opened the game or the database has been reset, show information #
     if firstTimeOpening:
@@ -141,13 +168,28 @@ while True:
         screen.fill(white)
         screen.fill(black, okBox)
         screen.blit(font.render("Ok", True, white), (335, 210))
-        screen.blit(font.render("Clicky Version 1.1!", True, black), (10, 10))
+        screen.blit(font.render("Clicky Version 1.0!", True, black), (10, 10))
         screen.blit(font.render("Written entirely in Python 3.6.5 and Pygame 1.9.4", True, black), (10, 30))
-        screen.blit(font.render("Update 1.1 Changelog:", True, black), (10, 50))
-        screen.blit(font.render(" - Added per second bonus, first time opening screen,", True, black), (10, 70))
-        screen.blit(font.render("   About screen, and did some backend work.", True, black), (10, 90))
+        screen.blit(font.render("Update 1.0 Changelog:", True, black), (10, 50))
+        screen.blit(font.render(" - Added splash screen, main game mechanics,", True, black), (10, 70))
+        screen.blit(font.render("   Game icon, and did some backend work.", True, black), (10, 90))
         screen.blit(font.render("Clicky is open source. See code at https://github.com/Lumiobyte/clicker", True, black), (10, 110))
         screen.blit(font.render("Clicky © 2019 Cockatoo Development Studios. See our website at https://cockatoo.dev!", True, black), (10, 130))
+        pygame.display.flip()
+
+    # About Screen #
+    elif isInErrorScreen:
+        screen.fill(white)
+        screen.fill(black, okBox)
+        screen.blit(font.render("Ok", True, white), (335, 210))
+        screen.blit(font.render("Oh no, this is embarrassing...", True, black), (10, 10))
+        screen.blit(font.render("Clicky encountered an error when loading your previous save.", True, black), (10, 30))
+        screen.blit(font.render("Has the file been moved or corrupted?", True, black), (10, 50))
+        screen.blit(font.render("If you moved the file and you know where it is, please get it", True, black), (10, 70))
+        screen.blit(font.render("and place it in the SAME DIRECTORY as this executable.", True, black), (10, 90))
+        screen.blit(font.render("If you're still having issues, please contact us at https://cockatoo.dev/contact", True, black), (10, 110))
+        screen.blit(font.render("You can still start your game from scratch if your save file has been corrupted.", True, black), (10, 130))
+        screen.blit(font.render("If you want to, click OK below.", True, black), (10, 150))
         pygame.display.flip()
 
     else:
