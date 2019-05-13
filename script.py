@@ -43,6 +43,12 @@ isInErrorScreen = False
 splashScreen = True
 inAchievementsScreen = False
 achievementGet = False
+inMinigamesScreen = False
+
+# Minigames Variables #
+minigamesUnlocked = [False]
+inMinigame = False
+inWhichMinigame = [False]
 
 scoreBox = (325, 75, 300, 100)
 getMultBox = (325, 200, 300, 100)
@@ -113,15 +119,19 @@ def save():
         json.dump(saves, file)
 
 def check_click(position, target):
-    print("x " + str(position[0]))
-    print("y " + str(position[1]))
-    print("target 1 " + str(target[0]))
-    print("target 2 " + str(target[1]))
-    print("target 3 " + str(target[2]))
-    print("target 4 " + str(target[3]))
     if ((position[0] > target[0] and position[0] < target[0] + target[2]) and (position[1] > target[1] and position[1] < target[1] + target[3])):
         print("Good!")
     return ((position[0] > target[0] and position[0] < target[0] + target[2]) and (position[1] > target[1] and position[1] < target[1] + target[3]))
+
+def check_screen():
+    global firstTimeOpening
+    global isInErrorScreen
+    global inAchievementsScreen
+    global inAboutScreen
+    global inMinigamesScreen
+    global inMinigame
+    if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen and not inMinigamesScreen and not inMinigame:
+        return True
 
 def exitScreen():
     screen.fill(white)
@@ -170,13 +180,13 @@ while True:
                     inAchievementsScreen = True
 
             elif check_click(event.pos, scoreBox):
-                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen:
+                if check_screen():
                     print(counter)
                     counter += 1 * mult
                     print(counter)
 
             elif check_click(event.pos, getMultBox):
-                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen:
+                if check_screen():
                     if counter >= multCost:
                         if mult == 1 and not achievements[1]:
                             pygame.mixer.music.play()
@@ -188,7 +198,7 @@ while True:
                         multCost += 100
 
             elif check_click(event.pos, getPerSecondBox):
-                if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen:
+                if check_screen():
                     if counter >= perSecondCost:
                         if perSecond == 0 and not achievements[2]:
                             pygame.mixer.music.play()
