@@ -15,6 +15,7 @@ pygame.mixer.music.load(os.path.join(sys.path[0], "sounds\\achievement.ogg"))
 white = [255, 255, 255]
 black = [0, 0, 0]
 green = [65, 221, 37]
+red = [244, 95, 66]
 
 counter = 0
 clickCount = 0
@@ -50,8 +51,6 @@ inMinigamesScreen = False
 
 # Minigames Variables #
 minigamesUnlocked = [False, False, False]
-inMinigame = False
-inWhichMinigame = [False, False, False]
 
 scoreBox = (325, 75, 300, 100)
 getMultBox = (325, 200, 300, 100)
@@ -93,6 +92,7 @@ def load():
         global perSecondCost
         global achievements
         global clickCount
+        global minigamesUnlocked
         saves = json.load(file)
         counter = int(saves["score"])
         mult = int(saves["multi"])
@@ -102,6 +102,7 @@ def load():
         perSecondCost = int(saves["perSecondCost"])
         achievements = saves["achievements"]
         clickCount = int(saves["clickCount"])
+        minigamesUnlocked = saves["minigamesUnlocked"]
 
 # Load scores #
 try:
@@ -122,6 +123,7 @@ def save():
     saves["perSecondCost"] = perSecondCost
     saves["achievements"] = achievements
     saves["clickCount"] = clickCount
+    saves["minigamesUnlocked"] = minigamesUnlocked
 
     with open(os.path.join(sys.path[0], "save.json"), "w") as file:
         json.dump(saves, file)
@@ -136,9 +138,7 @@ def check_screen():
     global isInErrorScreen
     global inAchievementsScreen
     global inAboutScreen
-    global inMinigamesScreen
-    global inMinigame
-    if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen and not inMinigamesScreen and not inMinigame:
+    if not firstTimeOpening and not isInErrorScreen and not inAboutScreen and not inAchievementsScreen:
         return True
 
 def exitScreen():
@@ -257,45 +257,6 @@ while True:
             clock.tick(61)
             pygame.display.flip()
 
-        elif inMinigamesScreen:
-            screen.fill(white)
-            screen.fill(black, okBox)
-            screen.blit(font.render("Back", True, white), (331, 210))
-            screen.blit(font.render("Which minigame would you like to play?", True, black), (10, 10))
-            screen.blit(font.render("Each minigame costs score to play.", True, black), (10, 30))
-            screen.blit(font.render("You will need to unlock it before you can play it.", True, black), (10, 50))
-            screen.blit(font.render("Minigames available: [gamehere]", True, black), (10, 90))
-            screen.blit(font.render("If it is locked, click to unlock if you have enough Score.", True, black), (10, 110))
-            screen.blit(font.render("If the game you want to play is unlocked, click to play if you have enough Score.", True, black), (10, 130))
-            screen.blit(font.render("Choose a minigame to play:", True, black), (10, 170))
-
-            screen.fill(black, minigameSelectBox1)
-            screen.blit(font.render("Some Epic Game", True, white), (16, 215))
-
-            screen.fill(black, minigameSelectBox2)
-            screen.blit(font.render("Some Epic Game", True, white), (16, 285))
-
-            screen.fill(black, minigameSelectBox3)
-            screen.blit(font.render("Some Epic Game", True, white), (16, 355))
-
-            if minigamesUnlocked[0]:
-                screen.blit(font.render("Cost to play: 550 Score", True, white), (16, 235))
-            elif not minigamesUnlocked[0]:
-                screen.blit(font.render("Cost to unlock: 2800 Score", True, white), (16, 235))
-
-            if minigamesUnlocked[1]:
-                screen.blit(font.render("Cost to play: 2250 Score", True, white), (16, 305))
-            elif not minigamesUnlocked[1]:
-                screen.blit(font.render("Cost to unlock: 16500 Score", True, white), (16, 305))
-
-            if minigamesUnlocked[2]:
-                screen.blit(font.render("Cost to play: 6750 Score", True, white), (16, 375))
-            elif not minigamesUnlocked[2]:
-                screen.blit(font.render("Cost to unlock: 25000 Score", True, white), (16, 375))
-
-            screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
-            clock.tick(61)
-            pygame.display.flip()
 
         # About Screen #
         elif inAboutScreen:
@@ -445,6 +406,30 @@ while True:
                 if check_click(event.pos, okBox):
                     whatScreen = "main"
 
+                elif check_click(event.pos, minigameSelectBox1):
+                    if minigamesUnlocked[0] and counter >= 550:
+                        counter -= 550
+                        #whatScreen = "minigame1"
+                    elif not minigamesUnlocked[0] and counter >= 2800:
+                        counter -= 2800
+                        minigamesUnlocked[0] = True
+                
+                elif check_click(event.pos, minigameSelectBox2):
+                    if minigamesUnlocked[1] and counter >= 2250:
+                        counter -= 2250
+                        #whatScreen = "minigame2"
+                    elif not minigamesUnlocked[1] and counter >= 16500:
+                        counter -= 16500
+                        minigamesUnlocked[1] = True
+
+                elif check_click(event.pos, minigameSelectBox3):
+                    if minigamesUnlocked[2] and counter >= 6750:
+                        counter -= 6750
+                        #whatScreen = "minigame3"
+                    elif not minigamesUnlocked[2] and counter >= 25000:
+                        counter -= 25000
+                        minigamesUnlocked[2] = True
+
         screen.fill(white)
         screen.fill(black, okBox)
         screen.blit(font.render("Back", True, white), (331, 210))
@@ -456,29 +441,33 @@ while True:
         screen.blit(font.render("If the game you want to play is unlocked, click to play if you have enough Score.", True, black), (10, 130))
         screen.blit(font.render("Choose a minigame to play:", True, black), (10, 170))
 
-        screen.fill(black, minigameSelectBox1)
-        screen.blit(font.render("Some Epic Game", True, white), (16, 215))
-
-        screen.fill(black, minigameSelectBox2)
-        screen.blit(font.render("Some Epic Game", True, white), (16, 285))
-
-        screen.fill(black, minigameSelectBox3)
-        screen.blit(font.render("Some Epic Game", True, white), (16, 355))
-
         if minigamesUnlocked[0]:
-            screen.blit(font.render("Cost to play: 550 Score", True, white), (16, 235))
+            screen.fill(green, minigameSelectBox1)
+            screen.blit(font.render("Cost to play: 550 Score", True, black), (16, 235))
         elif not minigamesUnlocked[0]:
-            screen.blit(font.render("Cost to unlock: 2800 Score", True, white), (16, 235))
+            screen.fill(red, minigameSelectBox1)
+            screen.blit(font.render("Cost to unlock: 2800 Score", True, black), (16, 235))
 
         if minigamesUnlocked[1]:
-            screen.blit(font.render("Cost to play: 2250 Score", True, white), (16, 305))
+            screen.fill(green, minigameSelectBox2)
+            screen.blit(font.render("Cost to play: 2250 Score", True, black), (16, 305))
         elif not minigamesUnlocked[1]:
-            screen.blit(font.render("Cost to unlock: 16500 Score", True, white), (16, 305))
+            screen.fill(red, minigameSelectBox2)
+            screen.blit(font.render("Cost to unlock: 16500 Score", True, black), (16, 305))
 
         if minigamesUnlocked[2]:
-            screen.blit(font.render("Cost to play: 6750 Score", True, white), (16, 375))
+            screen.fill(green, minigameSelectBox3)
+            screen.blit(font.render("Cost to play: 6750 Score", True, black), (16, 375))
         elif not minigamesUnlocked[2]:
-            screen.blit(font.render("Cost to unlock: 25000 Score", True, white), (16, 375))
+            screen.fill(red, minigameSelectBox3)
+            screen.blit(font.render("Cost to unlock: 25000 Score", True, black), (16, 375))
+
+        screen.blit(font.render("Some Epic Game", True, black), (16, 215))
+        screen.blit(font.render("Some Epic Game", True, black), (16, 285))
+        screen.blit(font.render("Some Epic Game", True, black), (16, 355))
+
+        # We need to tell the player how much score they have of course #
+        screen.blit(font.render("You have " + str(counter) + " score.", True, black), (600, 10))
 
         screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
         clock.tick(61)
