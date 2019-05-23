@@ -12,6 +12,17 @@ font = pygame.font.Font(None, 25)
 logo = pygame.image.load(os.path.join(sys.path[0], "images\logo.png"))
 pygame.mixer.music.load(os.path.join(sys.path[0], "sounds\\achievement.ogg"))
 
+# Minigame Assets #
+asteroidsBG = pygame.image.load(os.path.join(sys.path[0], "images\\asteroidsBG.jpg"))
+asteroidsBulletRaw = pygame.image.load(os.path.join(sys.path[0], "images\\asteroidsBullet.png"))
+asteroidsBullet = pygame.transform.scale(asteroidsBulletRaw, (20, 20))
+asteroidsSpaceshipRaw = pygame.image.load(os.path.join(sys.path[0], "images\\asteroidsSpaceship.png"))
+asteroidsSpaceship = pygame.transform.scale(asteroidsSpaceshipRaw, (70, 70))
+asteroidsAsteroidRaw = pygame.image.load(os.path.join(sys.path[0], "images\\asteroidsAsteroid.png"))
+asteroidsAsteroid = pygame.transform.scale(asteroidsAsteroidRaw, (70, 70))
+asteroidsAlienRaw = pygame.image.load(os.path.join(sys.path[0], "images\\asteroidsAlien.png"))
+asteroidsAlien = pygame.transform.scale(asteroidsAlienRaw, (70, 70))
+
 white = [255, 255, 255]
 black = [0, 0, 0]
 green = [65, 221, 37]
@@ -70,8 +81,42 @@ achGetBox = [300, 500, 200, 50]
 achGetText = [320, 520]
 waitCounter = 0
 
-# Thing? #
+# -----MINIGAME OBJECTS------ #
+# Asteroids
+asteroidsSpaceshipPos = [400, 400]
+canShoot = True
+missiles = {}
+asteroids = {}
+asteroidsScore = 0
+asteroidsHighScore = 0
+destroyed = False
+asteroidsToPop = []
+missilesToPop = []
+
+# Things? #
+pygame.key.set_repeat(25, 25)
 clock = pygame.time.Clock()
+
+# CLASSES #
+
+"""
+class missileProcessor(threading.Thread):
+    
+    def __init__(self):
+        self.missiles = []
+
+    def create_missile(self, shipPosition, missileID):
+        destroyed = False
+        self.missiles.append(missileID)
+        missilePos = shipPosition[1] - 20
+        while not destroyed:
+            missilePos -= 7
+            screen.blit(asteroidsBullet, (shipPosition[0], missilePos))
+            clock.tick(61)
+            pygame.display.flip()
+
+missileMaker = missileProcessor()
+"""
 
 # FUNCTIONS #
 
@@ -93,6 +138,7 @@ def load():
         global achievements
         global clickCount
         global minigamesUnlocked
+        global asteroidsHighScore
         saves = json.load(file)
         counter = int(saves["score"])
         mult = int(saves["multi"])
@@ -103,6 +149,7 @@ def load():
         achievements = saves["achievements"]
         clickCount = int(saves["clickCount"])
         minigamesUnlocked = saves["minigamesUnlocked"]
+        asteroidsHighScore = int(saves["asteroidsHighScore"])
 
 # Load scores #
 try:
@@ -124,6 +171,7 @@ def save():
     saves["achievements"] = achievements
     saves["clickCount"] = clickCount
     saves["minigamesUnlocked"] = minigamesUnlocked
+    saves["asteroidsHighScore"] = asteroidsHighScore
 
     with open(os.path.join(sys.path[0], "save.json"), "w") as file:
         json.dump(saves, file)
@@ -409,7 +457,7 @@ while True:
                 elif check_click(event.pos, minigameSelectBox1):
                     if minigamesUnlocked[0] and counter >= 550:
                         counter -= 550
-                        #whatScreen = "minigame1"
+                        whatScreen = "minigame1"
                     elif not minigamesUnlocked[0] and counter >= 2800:
                         counter -= 2800
                         minigamesUnlocked[0] = True
@@ -462,9 +510,9 @@ while True:
             screen.fill(red, minigameSelectBox3)
             screen.blit(font.render("Cost to unlock: 25000 Score", True, black), (16, 375))
 
-        screen.blit(font.render("Some Epic Game", True, black), (16, 215))
-        screen.blit(font.render("Some Epic Game", True, black), (16, 285))
-        screen.blit(font.render("Some Epic Game", True, black), (16, 355))
+        screen.blit(font.render("Asteroids", True, black), (16, 215))
+        screen.blit(font.render("Coming Soon", True, black), (16, 285))
+        screen.blit(font.render("Coming Soon", True, black), (16, 355))
 
         # We need to tell the player how much score they have of course #
         screen.blit(font.render("You have " + str(counter) + " score.", True, black), (600, 10))
@@ -472,3 +520,84 @@ while True:
         screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
         clock.tick(61)
         pygame.display.flip()
+
+
+    # MINIGAME 1 #
+    while whatScreen == "minigame1":
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                if asteroidsScore > asteroidsHighScore:
+                    asteroidsHighScore = asteroidsScore
+                save()
+                gameRunning = False
+                exitScreen()
+                sys.exit()
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if asteroidsScore > asteroidsHighScore:
+                        asteroidsHighScore = asteroidsScore
+                    whatScreen = "minigameSelect"
+                if event.key == pygame.K_LEFT:
+                    if not asteroidsSpaceshipPos[0] < 25:
+                        asteroidsSpaceshipPos[0] -= 7
+                if event.key == pygame.K_RIGHT:
+                    if not asteroidsSpaceshipPos[0] > 700:
+                        asteroidsSpaceshipPos[0] += 7
+                if event.key == pygame.K_SPACE:
+                    if canShoot:
+                        name = str(random.randint(0, 10000))
+                        missiles[name] = [asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20]
+                        canShoot = False
+
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE:
+                    if not canShoot:
+                        asteroidsScore += 1
+                        canShoot = True
+
+        if not destroyed:
+            if random.randint(0, 60) == 27:
+                name = str(random.randint(0, 10000))
+                if random.randint(0, 11) <= 7:
+                    asteroids[name] = [random.randint(30, 750), -35, asteroidsAsteroid]
+                else:
+                    asteroids[name] = [random.randint(30, 750), -35, asteroidsAlien]
+
+            screen.blit(asteroidsBG, (-300, 0))
+            screen.blit(asteroidsSpaceship, (asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1]))
+
+            for asteroid in asteroids:
+                asteroids[asteroid][1] += 4
+                screen.blit(asteroids[asteroid][2], (asteroids[asteroid][0], asteroids[asteroid][1]))
+
+            for missile in missiles:
+                missiles[missile][1] -= 7
+                screen.blit(asteroidsBullet, (missiles[missile][0], missiles[missile][1]))
+
+
+        # COLLISION CHECKS 70x70 except bullet 20x20 #
+        for missile in missiles:
+            for asteroid in asteroids:
+                if missiles[missile][0] > asteroids[asteroid][0] or missiles[missile][0] + 20 < asteroids[asteroid][0] + 70:
+                    asteroidsToPop.append(asteroid)
+                    missilesToPop.append(missile)
+
+        """
+        for item in asteroidsToPop:
+            print("popped asteroid {}".format(item))
+        asteroidsToPop = []
+
+        for item in missilesToPop:
+            print("popped missile {}".format(item))
+            print(missilesToPop)
+        missilesToPop = []
+        print(missilesToPop)
+        """
+
+        screen.blit(font.render("Minigame Score: {}".format(asteroidsScore), True, white), (10, 10))
+        screen.blit(font.render("Minigame Highscore: {}".format(asteroidsHighScore), True, white), (10, 30))
+        screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
+        clock.tick(61)
+        pygame.display.flip()
+
