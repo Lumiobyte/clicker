@@ -580,8 +580,7 @@ while True:
         for missile in missiles:
             for asteroid in asteroids:
                 if missiles[missile][0] > asteroids[asteroid][0] or missiles[missile][0] + 20 < asteroids[asteroid][0] + 70:
-                    asteroidsToPop.append(asteroid)
-                    missilesToPop.append(missile)
+                    print("popped {}".format(missile))
 
         """
         for item in asteroidsToPop:
