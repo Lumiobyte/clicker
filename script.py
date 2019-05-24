@@ -92,31 +92,11 @@ asteroidsHighScore = 0
 destroyed = False
 asteroidsToPop = []
 missilesToPop = []
+asteroidsFrameUpdate = False
 
 # Things? #
-pygame.key.set_repeat(25, 25)
+pygame.key.set_repeat(10, 10)
 clock = pygame.time.Clock()
-
-# CLASSES #
-
-"""
-class missileProcessor(threading.Thread):
-    
-    def __init__(self):
-        self.missiles = []
-
-    def create_missile(self, shipPosition, missileID):
-        destroyed = False
-        self.missiles.append(missileID)
-        missilePos = shipPosition[1] - 20
-        while not destroyed:
-            missilePos -= 7
-            screen.blit(asteroidsBullet, (shipPosition[0], missilePos))
-            clock.tick(61)
-            pygame.display.flip()
-
-missileMaker = missileProcessor()
-"""
 
 # FUNCTIONS #
 
@@ -125,6 +105,19 @@ def secondLoop():
     while gameRunning:
         counter += perSecond
         time.sleep(1)
+
+def asteroidsCollisionChecks():
+    global asteroids
+    global missiles
+    global asteroidsFrameUpdate
+
+    while gameRunning:
+        if asteroidsFrameUpdate:
+            value = 1 + 1
+            asteroidsFrameUpdate = False
+        else:
+            value = 1+1
+        time.sleep(0.25)
 
 def load():
     with open(os.path.join(sys.path[0], "save.json"), "r") as file:
@@ -195,9 +188,12 @@ def exitScreen():
     pygame.display.flip()
     time.sleep(2)
 
-# Start the loop #
+# Start the loops #
 secondLoopThread = threading.Thread(target=secondLoop)
 secondLoopThread.start()
+
+asteroidsCollisionChecksLoop = threading.Thread(target=asteroidsCollisionChecks)
+asteroidsCollisionChecksLoop.start()
 
 # MAIN GAME LOOP #
 while True:
@@ -567,22 +563,31 @@ while True:
             screen.blit(asteroidsBG, (-300, 0))
             screen.blit(asteroidsSpaceship, (asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1]))
 
-            for asteroid in asteroids:
+            for asteroid in list(asteroids):
                 asteroids[asteroid][1] += 4
                 screen.blit(asteroids[asteroid][2], (asteroids[asteroid][0], asteroids[asteroid][1]))
+                if asteroids[asteroid][1] >= 550:
+                    asteroids.pop(asteroid)
 
-            for missile in missiles:
+            for missile in list(missiles):
                 missiles[missile][1] -= 7
                 screen.blit(asteroidsBullet, (missiles[missile][0], missiles[missile][1]))
+                if missiles[missile][1] <= -50:
+                    missiles.pop(missile)
 
 
         # COLLISION CHECKS 70x70 except bullet 20x20 #
+
+        """
+        for missile in missiles:
+            for asteroid in asteroids:
+                print("laggueingue testes!")
+
         for missile in missiles:
             for asteroid in asteroids:
                 if missiles[missile][0] > asteroids[asteroid][0] or missiles[missile][0] + 20 < asteroids[asteroid][0] + 70:
                     print("popped {}".format(missile))
 
-        """
         for item in asteroidsToPop:
             print("popped asteroid {}".format(item))
         asteroidsToPop = []
@@ -590,7 +595,7 @@ while True:
         for item in missilesToPop:
             print("popped missile {}".format(item))
             print(missilesToPop)
-        missilesToPop = []
+        missilesToPop = []          
         print(missilesToPop)
         """
 
@@ -598,5 +603,6 @@ while True:
         screen.blit(font.render("Minigame Highscore: {}".format(asteroidsHighScore), True, white), (10, 30))
         screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
         clock.tick(61)
+        asteroidsFrameUpdate = True
         pygame.display.flip()
 
