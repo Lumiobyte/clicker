@@ -533,6 +533,7 @@ while True:
                 if event.key == pygame.K_ESCAPE:
                     if asteroidsScore > asteroidsHighScore:
                         asteroidsHighScore = asteroidsScore
+                    asteroidsScore = 0
                     whatScreen = "minigameSelect"
                 if event.key == pygame.K_LEFT:
                     if not asteroidsSpaceshipPos[0] < 25:
@@ -543,61 +544,52 @@ while True:
                 if event.key == pygame.K_SPACE:
                     if canShoot:
                         name = str(random.randint(0, 10000))
-                        missiles[name] = [asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20]
+                        #missiles[name] = [asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20]
+                        missiles[name] = [pygame.Rect(asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20, 20, 20)]
                         canShoot = False
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     if not canShoot:
-                        asteroidsScore += 1
                         canShoot = True
 
         if not destroyed:
             if random.randint(0, 60) == 27:
                 name = str(random.randint(0, 10000))
                 if random.randint(0, 11) <= 7:
-                    asteroids[name] = [random.randint(30, 750), -35, asteroidsAsteroid]
+                    #asteroids[name] = [random.randint(30, 750), -35, asteroidsAsteroid]
+                    asteroids[name] = [pygame.Rect(random.randint(30, 750), -35, 70, 70), asteroidsAsteroid]
                 else:
-                    asteroids[name] = [random.randint(30, 750), -35, asteroidsAlien]
+                    #asteroids[name] = [random.randint(30, 750), -35, asteroidsAlien]
+                    asteroids[name] = [pygame.Rect(random.randint(30, 750), -35, 70, 70), asteroidsAlien]
 
             screen.blit(asteroidsBG, (-300, 0))
             screen.blit(asteroidsSpaceship, (asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1]))
 
             for asteroid in list(asteroids):
-                asteroids[asteroid][1] += 4
-                screen.blit(asteroids[asteroid][2], (asteroids[asteroid][0], asteroids[asteroid][1]))
-                if asteroids[asteroid][1] >= 550:
+                asteroids[asteroid][0].top += 4
+                screen.blit(asteroids[asteroid][1], (asteroids[asteroid][0].left, asteroids[asteroid][0].top))
+                if asteroids[asteroid][0].top >= 550:
                     asteroids.pop(asteroid)
 
             for missile in list(missiles):
-                missiles[missile][1] -= 7
-                screen.blit(asteroidsBullet, (missiles[missile][0], missiles[missile][1]))
-                if missiles[missile][1] <= -50:
+                missiles[missile][0].top -= 7
+                screen.blit(asteroidsBullet, (missiles[missile][0].left, missiles[missile][0].top))
+                if missiles[missile][0].top <= -50:
                     missiles.pop(missile)
 
+            # COLLISION CHECKS #
 
-        # COLLISION CHECKS 70x70 except bullet 20x20 #
+            # missiles/asteroids
+            for missile in list(missiles):
+                for asteroid in list(asteroids):
+                    if missiles[missile][0].colliderect(asteroids[asteroid][0]):
+                        missiles.pop(missile)
+                        asteroids.pop(asteroid)
+                        asteroidsScore += random.randint(1, 4)
+                        break
 
-        """
-        for missile in missiles:
-            for asteroid in asteroids:
-                print("laggueingue testes!")
-
-        for missile in missiles:
-            for asteroid in asteroids:
-                if missiles[missile][0] > asteroids[asteroid][0] or missiles[missile][0] + 20 < asteroids[asteroid][0] + 70:
-                    print("popped {}".format(missile))
-
-        for item in asteroidsToPop:
-            print("popped asteroid {}".format(item))
-        asteroidsToPop = []
-
-        for item in missilesToPop:
-            print("popped missile {}".format(item))
-            print(missilesToPop)
-        missilesToPop = []          
-        print(missilesToPop)
-        """
+            #asteroids/ship
 
         screen.blit(font.render("Minigame Score: {}".format(asteroidsScore), True, white), (10, 10))
         screen.blit(font.render("Minigame Highscore: {}".format(asteroidsHighScore), True, white), (10, 30))
