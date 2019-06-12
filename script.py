@@ -93,6 +93,8 @@ destroyed = False
 asteroidsToPop = []
 missilesToPop = []
 asteroidsFrameUpdate = False
+asteroidsSpaceshipObj = None
+playAgainBox = (40, 125, 135, 50)
 
 # Things? #
 pygame.key.set_repeat(10, 10)
@@ -105,19 +107,6 @@ def secondLoop():
     while gameRunning:
         counter += perSecond
         time.sleep(1)
-
-def asteroidsCollisionChecks():
-    global asteroids
-    global missiles
-    global asteroidsFrameUpdate
-
-    while gameRunning:
-        if asteroidsFrameUpdate:
-            value = 1 + 1
-            asteroidsFrameUpdate = False
-        else:
-            value = 1+1
-        time.sleep(0.25)
 
 def load():
     with open(os.path.join(sys.path[0], "save.json"), "r") as file:
@@ -191,9 +180,6 @@ def exitScreen():
 # Start the loops #
 secondLoopThread = threading.Thread(target=secondLoop)
 secondLoopThread.start()
-
-asteroidsCollisionChecksLoop = threading.Thread(target=asteroidsCollisionChecks)
-asteroidsCollisionChecksLoop.start()
 
 # MAIN GAME LOOP #
 while True:
@@ -453,6 +439,8 @@ while True:
                 elif check_click(event.pos, minigameSelectBox1):
                     if minigamesUnlocked[0] and counter >= 550:
                         counter -= 550
+                        asteroidsSpaceshipObj = pygame.Rect(asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1], 70, 70)
+
                         whatScreen = "minigame1"
                     elif not minigamesUnlocked[0] and counter >= 2800:
                         counter -= 2800
@@ -536,16 +524,16 @@ while True:
                     asteroidsScore = 0
                     whatScreen = "minigameSelect"
                 if event.key == pygame.K_LEFT:
-                    if not asteroidsSpaceshipPos[0] < 25:
-                        asteroidsSpaceshipPos[0] -= 7
+                    if not asteroidsSpaceshipObj.left < 25:
+                        asteroidsSpaceshipObj.left -= 7
                 if event.key == pygame.K_RIGHT:
-                    if not asteroidsSpaceshipPos[0] > 700:
-                        asteroidsSpaceshipPos[0] += 7
+                    if not asteroidsSpaceshipObj.left > 700:
+                        asteroidsSpaceshipObj.left += 7
                 if event.key == pygame.K_SPACE:
                     if canShoot:
                         name = str(random.randint(0, 10000))
                         #missiles[name] = [asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20]
-                        missiles[name] = [pygame.Rect(asteroidsSpaceshipPos[0] + 25, asteroidsSpaceshipPos[1] + 20, 20, 20)]
+                        missiles[name] = [pygame.Rect(asteroidsSpaceshipObj.left + 25, asteroidsSpaceshipObj.top + 20, 20, 20)]
                         canShoot = False
 
             elif event.type == pygame.KEYUP:
@@ -564,7 +552,7 @@ while True:
                     asteroids[name] = [pygame.Rect(random.randint(30, 750), -35, 70, 70), asteroidsAlien]
 
             screen.blit(asteroidsBG, (-300, 0))
-            screen.blit(asteroidsSpaceship, (asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1]))
+            screen.blit(asteroidsSpaceship, (asteroidsSpaceshipObj.left, asteroidsSpaceshipObj.top))
 
             for asteroid in list(asteroids):
                 asteroids[asteroid][0].top += 4
@@ -577,10 +565,10 @@ while True:
                 screen.blit(asteroidsBullet, (missiles[missile][0].left, missiles[missile][0].top))
                 if missiles[missile][0].top <= -50:
                     missiles.pop(missile)
+                    
 
             # COLLISION CHECKS #
 
-            # missiles/asteroids
             for missile in list(missiles):
                 for asteroid in list(asteroids):
                     if missiles[missile][0].colliderect(asteroids[asteroid][0]):
@@ -589,12 +577,62 @@ while True:
                         asteroidsScore += random.randint(1, 4)
                         break
 
-            #asteroids/ship
+            for asteroid in list(asteroids):
+                if asteroidsSpaceshipObj.colliderect(asteroids[asteroid][0]):
+                    print("oh no, player1 died")
+                    asteroids.pop(asteroid)
+                    whatScreen = "minigame1_died"
 
         screen.blit(font.render("Minigame Score: {}".format(asteroidsScore), True, white), (10, 10))
         screen.blit(font.render("Minigame Highscore: {}".format(asteroidsHighScore), True, white), (10, 30))
         screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
         clock.tick(61)
-        asteroidsFrameUpdate = True
         pygame.display.flip()
+
+    # MINIGAME 1 DEATH SCREEN
+    while whatScreen == "minigame1_died":
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                save()
+                gameRunning = False
+                exitScreen()
+                sys.exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+
+                if clickCount == 1:
+                    pygame.mixer.music.play()
+                    achievementGet = True
+                    achievements[0] = True
+
+                clickCount += 1
+
+                if check_click(event.pos, okBox):
+                    whatScreen = "minigameSelect"
+
+                elif check_click(event.pos, playAgainBox):
+                    if minigamesUnlocked[0] and counter >= 550:
+                        counter -= 550
+                        asteroidsSpaceshipObj = pygame.Rect(asteroidsSpaceshipPos[0], asteroidsSpaceshipPos[1], 70, 70)
+
+                        whatScreen = "minigame1"
+
+
+
+        screen.blit(font.render("Oh no...".format(asteroidsScore), True, white), (10, 10))
+        screen.blit(font.render("You died! Score: {}".format(asteroidsScore), True, white), (10, 30))
+        screen.blit(font.render("Click back to go to the game selector, or Play Again to play again for 550 score!", True, white), (10, 50))
+
+        screen.fill(black, okBox)
+        screen.blit(font.render("Ok", True, white), (335, 210))
+        screen.fill(black, playAgainBox)
+
+
+        # Get FPS & Render it #
+        screen.blit(font.render("FPS: {}".format(round(clock.get_fps(), 1)), True, black), (700, 470))
+
+        # Make stuff work? #
+        clock.tick(61)
+        pygame.display.flip()
+
 
